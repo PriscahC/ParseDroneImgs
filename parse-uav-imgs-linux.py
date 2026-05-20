@@ -48,35 +48,51 @@ from subprocess import call
 from datetime import datetime
 from operator import itemgetter
 from shutil import copyfile
-import imp
-from distutils import spawn
+# import imp        #Replaced deprecated imports
+# from distutils import spawn         #Replaced deprecated imports
+import importlib.util
+import shutil
 
 ## Make sure a directory was passed
 if len(sys.argv)==1:
     print("Please pass a directory name")
-    os.system("pause")
+    # os.system("pause")
+    input("Press Enter to continue...")
     quit()
 
-## Make sure exiftool is available
-if spawn.find_executable("exiftool") is None:
+## Make sure exiftool is available     # Replaced this block
+# if spawn.find_executable("exiftool") is None:
+#     print("This script requires exiftool.exe to be somewhere on the system path")
+#     print("  a. Download it from http://www.sno.phy.queensu.ca/~phil/exiftool/")
+#     print("  b. Install")
+#     print("  c. Rename 'exiftool(-k).exe' to 'exiftool.exe'")
+#     print("  d. Move 'exiftool.exe' to a directory on the system PATH (like c:\windows)")
+#     os.system("pause")
+#     quit()
+if shutil.which("exiftool") is None:
     print("This script requires exiftool.exe to be somewhere on the system path")
     print("  a. Download it from http://www.sno.phy.queensu.ca/~phil/exiftool/")
     print("  b. Install")
     print("  c. Rename 'exiftool(-k).exe' to 'exiftool.exe'")
-    print("  d. Move 'exiftool.exe' to a directory on the system PATH (like c:\windows)")
-    os.system("pause")
-    quit()
+    print(r"  d. Move 'exiftool.exe' to a directory on the system PATH (like c:\windows)")
+    input("Press Enter to continue...")
+    quit()    
 
-try:
-    imp.find_module('colorama')
-except ImportError:
+# try:        Replaced this block
+#     imp.find_module('colorama')
+# except ImportError:
+    # print("A required Python module colorama was not found.")
+    # print("To install try:")
+    # print("cd C:\\Python27\\ArcGIS10.5\\Scripts")
+    # print("or")
+    # print("cd C:\\Program Files (x86)\\Python36-32\\Scripts")
+    # print("pip.exe install colorama")
+    # os.system("pause")
+    # quit()
+if importlib.util.find_spec('colorama') is None:
     print("A required Python module colorama was not found.")
     print("To install try:")
-    print("cd C:\\Python27\\ArcGIS10.5\\Scripts")
-    print("or")
-    print("cd C:\\Program Files (x86)\\Python36-32\\Scripts")
-    print("pip.exe install colorama")
-    os.system("pause")
+    print("pip install colorama")
     quit()
 
 from colorama import init, Fore, Back, Style
@@ -94,11 +110,21 @@ def coltxt(strTxt, strCol="cyan", brightYN=True):
         print("color not found: " + strCol + Style.RESET_ALL)
         return ""
 
+# try:     #Updated this block
+#     imp.find_module('osgeo')
+#     gdalYN = True
+#     import osgeo.ogr as ogr
+#     import osgeo.osr as osr
+# except ImportError:
+#     gdalYN = False
+#     print("python gdal module not found. Shapefile export will be disabled\n")
 try:
-    imp.find_module('osgeo')
-    gdalYN = True
-    import osgeo.ogr as ogr
-    import osgeo.osr as osr
+    if importlib.util.find_spec('osgeo') is not None:
+        gdalYN = True
+        import osgeo.ogr as ogr
+        import osgeo.osr as osr
+    else:
+        gdalYN = False
 except ImportError:
     gdalYN = False
     print("python gdal module not found. Shapefile export will be disabled\n")
@@ -124,7 +150,8 @@ fnInputLastDir = os.path.basename(os.path.normpath(fnInputDir))
 if not os.path.isdir(fnInputDir):
     print(fnInputDir + " is not a directory.")
     print("If launching from the command line, be sure to put double-quotes around directory names that conatain spaces.")
-    os.system("pause")
+    # os.system("pause") 
+    input("Press Enter to continue...")
     quit()
 
 ## Define tags in the image header (these work with all cameras tested so far)
@@ -151,7 +178,7 @@ tagsAllForCmd = "-" + tagDateTimeOrig + " -" + tagLat + " -" + tagLong + tagYawS
 #    tagsAllForCmd = "-" + tagDateTimeOrig + " -" + tagLat + " -" + tagLong
 #else:
 #    print("Unknown camera type")
-#    os.system("pause")
+#    os.system("pause")  input("Press Enter to continue...")
 #    quit()
 
 ## Notes
@@ -165,9 +192,11 @@ fnCSV = os.path.join(fnInputDir, fnCSV)
 strCmd = "exiftool -if \"$filesize# > 0\" -filename " + tagsAllForCmd + " -n -csv \"" + fnInputDir + "\" > \"" + fnCSV + "\""
 
 created_csv = call(strCmd, shell=True)
-if created_csv != 0:
+# if created_csv != 0: Fail on an error message only
+ if created_csv == 2:
     print("Error extracting EXIF info (" + str(created_csv) + ")")
-    os.system("pause")
+    # os.system("pause")
+    input("Press Enter to continue...")
     quit()
 
 ### Use a dictionary reader on the csv file so we can access columns by field name
@@ -181,7 +210,8 @@ for fld in required_flds:
     if not fld in csvReader.fieldnames:
         print("Required tag not found: " + fld)
         print("Make sure all the images in this folder have a DateTimeOriginal and geostamp tags")
-        os.system("pause")
+        # os.system("pause")
+        input("Press Enter to continue...")
         quit()
 
 ### Input CSV data into a list of tuples
